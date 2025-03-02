@@ -1,0 +1,1 @@
+ALTER TABLE "sections_occupancy" ADD COLUMN "availablebeds" integer DEFAULT 0;

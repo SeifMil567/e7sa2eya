@@ -1,0 +1,570 @@
+{
+  "id": "fd2f79ed-68c3-4322-98e0-a3231e34448a",
+  "prevId": "36860ca1-da1a-4801-a174-14e675e7d441",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.actions": {
+      "name": "actions",
+      "schema": "",
+      "columns": {
+        "aid": {
+          "name": "aid",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "adminlevel": {
+          "name": "adminlevel",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.nutritions": {
+      "name": "nutritions",
+      "schema": "",
+      "columns": {
+        "nid": {
+          "name": "nid",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nname": {
+          "name": "nname",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "byuser": {
+          "name": "byuser",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datecreated": {
+          "name": "datecreated",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "nutritions_byuser_users_uid_fk": {
+          "name": "nutritions_byuser_users_uid_fk",
+          "tableFrom": "nutritions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "byuser"
+          ],
+          "columnsTo": [
+            "uid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.patient_ranks": {
+      "name": "patient_ranks",
+      "schema": "",
+      "columns": {
+        "rankid": {
+          "name": "rankid",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "rankname": {
+          "name": "rankname",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.patients": {
+      "name": "patients",
+      "schema": "",
+      "columns": {
+        "pid": {
+          "name": "pid",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "pnum": {
+          "name": "pnum",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fullname": {
+          "name": "fullname",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rankid": {
+          "name": "rankid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unit": {
+          "name": "unit",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "host": {
+          "name": "host",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "byuser": {
+          "name": "byuser",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "datecreated": {
+          "name": "datecreated",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "patients_rankid_patient_ranks_rankid_fk": {
+          "name": "patients_rankid_patient_ranks_rankid_fk",
+          "tableFrom": "patients",
+          "tableTo": "patient_ranks",
+          "columnsFrom": [
+            "rankid"
+          ],
+          "columnsTo": [
+            "rankid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "patients_byuser_users_uid_fk": {
+          "name": "patients_byuser_users_uid_fk",
+          "tableFrom": "patients",
+          "tableTo": "users",
+          "columnsFrom": [
+            "byuser"
+          ],
+          "columnsTo": [
+            "uid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.patients_history": {
+      "name": "patients_history",
+      "schema": "",
+      "columns": {
+        "phid": {
+          "name": "phid",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "diagnoses": {
+          "name": "diagnoses",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entrydate": {
+          "name": "entrydate",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nutrition": {
+          "name": "nutrition",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pid": {
+          "name": "pid",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exitdate": {
+          "name": "exitdate",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "section": {
+          "name": "section",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "byuser": {
+          "name": "byuser",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "datecreated": {
+          "name": "datecreated",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "patients_history_nutrition_nutritions_nid_fk": {
+          "name": "patients_history_nutrition_nutritions_nid_fk",
+          "tableFrom": "patients_history",
+          "tableTo": "nutritions",
+          "columnsFrom": [
+            "nutrition"
+          ],
+          "columnsTo": [
+            "nid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "patients_history_pid_patients_pid_fk": {
+          "name": "patients_history_pid_patients_pid_fk",
+          "tableFrom": "patients_history",
+          "tableTo": "patients",
+          "columnsFrom": [
+            "pid"
+          ],
+          "columnsTo": [
+            "pid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "patients_history_section_sections_occupancy_secid_fk": {
+          "name": "patients_history_section_sections_occupancy_secid_fk",
+          "tableFrom": "patients_history",
+          "tableTo": "sections_occupancy",
+          "columnsFrom": [
+            "section"
+          ],
+          "columnsTo": [
+            "secid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "patients_history_action_actions_aid_fk": {
+          "name": "patients_history_action_actions_aid_fk",
+          "tableFrom": "patients_history",
+          "tableTo": "actions",
+          "columnsFrom": [
+            "action"
+          ],
+          "columnsTo": [
+            "aid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "patients_history_byuser_users_uid_fk": {
+          "name": "patients_history_byuser_users_uid_fk",
+          "tableFrom": "patients_history",
+          "tableTo": "users",
+          "columnsFrom": [
+            "byuser"
+          ],
+          "columnsTo": [
+            "uid"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.ranks": {
+      "name": "ranks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ranks_name_unique": {
+          "name": "ranks_name_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "name"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sections": {
+      "name": "sections",
+      "schema": "",
+      "columns": {
+        "secid": {
+          "name": "secid",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "secname": {
+          "name": "secname",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "seccapacity": {
+          "name": "seccapacity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sections_occupancy": {
+      "name": "sections_occupancy",
+      "schema": "",
+      "columns": {
+        "secid": {
+          "name": "secid",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "secname": {
+          "name": "secname",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "officers": {
+          "name": "officers",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "officersfamily": {
+          "name": "officersfamily",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "ranks": {
+          "name": "ranks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "familyranks": {
+          "name": "familyranks",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "civilian": {
+          "name": "civilian",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "patients": {
+          "name": "patients",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "escorts": {
+          "name": "escorts",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "default": 0
+        },
+        "totalcapacity": {
+          "name": "totalcapacity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "uid": {
+          "name": "uid",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "uname": {
+          "name": "uname",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "username": {
+          "name": "username",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "adminlevel": {
+          "name": "adminlevel",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 3
+        },
+        "milnum": {
+          "name": "milnum",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "byuser": {
+          "name": "byuser",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "activ": {
+          "name": "activ",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "datecreated": {
+          "name": "datecreated",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
