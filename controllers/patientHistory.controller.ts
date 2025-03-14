@@ -9,8 +9,9 @@ import {
   nutritions,
   users,
   sectionGroup,
+  actions,
 } from "../db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, or, desc } from "drizzle-orm";
 import type {
   AdmissionType,
   TransferType,
@@ -19,8 +20,10 @@ import type {
   changeRoomType,
   addEscortType,
   EditAdmissionType,
+  RestoreType,
 } from "../schemas/patientHistory.schema";
 import { sql } from "drizzle-orm";
+import type { HistoryFilterType } from "../schemas/history.schema";
 
 const getFormattedKey = (
   rankName: string | null,
@@ -488,6 +491,7 @@ export class PatientHistoryController {
           sectionId: sectionsOccupancy.secID,
           sectionName: sectionsOccupancy.secName,
           escorts: sectionsOccupancy.escorts,
+          totalCapacity: sectionsOccupancy.totalCapacity,
 
           // Patient History Data
           phID: patientsHistory.phID,
@@ -567,14 +571,18 @@ export class PatientHistoryController {
           };
 
           if (section) {
-            section.patients.push(patientData);
+            if (patient.totalCapacity !== 1111) {
+              section.patients.push(patientData);
+            }
           } else {
-            acc.push({
-              sectionId: patient.sectionId,
-              sectionName: patient.sectionName,
-              sectionEscorts: patient.escorts,
-              patients: [patientData],
-            });
+            if (patient.totalCapacity !== 1111) {
+              acc.push({
+                sectionId: patient.sectionId,
+                sectionName: patient.sectionName,
+                sectionEscorts: patient.escorts,
+                patients: [patientData],
+              });
+            }
           }
 
           return acc;
@@ -593,6 +601,260 @@ export class PatientHistoryController {
       };
     } catch (error) {
       return { success: false, error: error };
+    }
+  }
+
+  static async getHistory(filters: HistoryFilterType) {
+    try {
+      const itemsPerPage = 25;
+      const offset = (filters.page - 1) * itemsPerPage;
+
+      let whereConditions = [];
+
+      if (filters.activeOnly) {
+        whereConditions.push(sql`${patientsHistory.exitDate} IS NULL`);
+      }
+
+      if (filters.search) {
+        const searchTerm = `%${filters.search}%`;
+        whereConditions.push(
+          or(
+            sql`${patients.fullName} ILIKE ${searchTerm}`,
+            sql`${patients.pNum} ILIKE ${searchTerm}`,
+            sql`${sectionsOccupancy.secName} ILIKE ${searchTerm}`,
+            sql`${users.uName} ILIKE ${searchTerm}`,
+            sql`${patientsHistory.Diagnoses} ILIKE ${searchTerm}`
+          )
+        );
+      }
+
+      if (filters.startDate) {
+        whereConditions.push(
+          sql`${patientsHistory.dateCreated} >= ${filters.startDate}`
+        );
+      }
+
+      if (filters.endDate) {
+        whereConditions.push(
+          sql`${patientsHistory.dateCreated} <= ${filters.endDate}`
+        );
+      }
+
+      if (filters.sectionId) {
+        whereConditions.push(eq(patientsHistory.section, filters.sectionId));
+      }
+
+      if (filters.actionType) {
+        whereConditions.push(eq(patientsHistory.action, filters.actionType));
+      }
+
+      // Build base query
+      const baseQuery = db
+        .select({
+          // History Data
+          patientID: patientsHistory.pID,
+          phID: patientsHistory.phID,
+          entryDate: patientsHistory.entryDate,
+          dateCreated: patientsHistory.dateCreated,
+
+          // Patient Data
+          patientName: patients.fullName,
+          patientNumber: patients.pNum,
+
+          // Section Data
+          sectionName: sectionsOccupancy.secName,
+
+          // Action Data
+          actionID: actions.aID,
+          actionType: actions.Type,
+
+          // User Data
+          userName: users.uName,
+
+          // Additional context data
+          diagnoses: patientsHistory.Diagnoses,
+          room: patientsHistory.room,
+          nutritionName: nutritions.nName,
+          rankName: ranks.name,
+          familyRelationName: rankFamily.name,
+        })
+        .from(patientsHistory)
+        .innerJoin(patients, eq(patientsHistory.pID, patients.pID))
+        .innerJoin(
+          sectionsOccupancy,
+          eq(patientsHistory.section, sectionsOccupancy.secID)
+        )
+        .innerJoin(actions, eq(patientsHistory.action, actions.aID))
+        .innerJoin(users, eq(patientsHistory.ByUser, users.uID))
+        .leftJoin(ranks, eq(patients.rankID, ranks.id))
+        .leftJoin(rankFamily, eq(patients.familyRelation, rankFamily.id))
+        .leftJoin(nutritions, eq(patientsHistory.nutrition, nutritions.nID));
+
+      // Apply filters
+      const query = baseQuery.where(and(...whereConditions));
+
+      // Get total count for pagination
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(query.as("filtered_history"));
+
+      // Get paginated results with previous records for comparison
+      const records = await query
+        .orderBy(desc(patientsHistory.dateCreated))
+        .limit(itemsPerPage)
+        .offset(offset);
+
+      // Format records
+      const formattedRecords = await Promise.all(
+        records.map(async (record) => {
+          // Get previous record for this patient
+          const [previousRecord] = await db
+            .select({
+              nutrition: nutritions.nName,
+              section: sectionsOccupancy.secName,
+              room: patientsHistory.room,
+              diagnoses: patientsHistory.Diagnoses,
+            })
+            .from(patientsHistory)
+            .innerJoin(
+              nutritions,
+              eq(patientsHistory.nutrition, nutritions.nID)
+            )
+            .innerJoin(
+              sectionsOccupancy,
+              eq(patientsHistory.section, sectionsOccupancy.secID)
+            )
+            .where(
+              and(
+                sql`${patientsHistory.pID} = ${record.patientID}`,
+                eq(
+                  patientsHistory.phID,
+                  sql`(
+                  SELECT ph2.phID 
+                  FROM patients_history ph2 
+                  WHERE ph2.pID = ${record.patientID} 
+                  AND ph2.phID < ${record.phID}
+                  ORDER BY ph2.phID DESC 
+                  LIMIT 1
+                )`
+                )
+              )
+            );
+
+          // Build main description
+          let description = `قام "${record.userName}" `;
+          let changes = [];
+
+          switch (record.actionID) {
+            case 1:
+              // description += `اضاف حالة "${record.patientName}" الى "${record.sectionName}"`;
+              description += `باضافة "${record.patientName}" الي قسم "${record.sectionName}"`;
+              // changes.push(`اضافة جديدة الي قسم "${record.sectionName}"`);
+              break;
+            case 2:
+              description += `بنقل حالة "${record.patientName}" الى قسم "${record.sectionName}"`;
+              // if (previousRecord) {
+              //   changes.push(
+              //     `نقل الحالة من قسم ${previousRecord.section} الى "${record.sectionName}"`
+              //   );
+              // }
+              break;
+            case 4:
+              description += `بإخراج حالة "${record.patientName}" من قسم "${record.sectionName}"`;
+              // changes.push(`خرج حالة من "${record.sectionName}"`);
+              break;
+            case 3:
+              description += `بتغير التغذية لدى "${record.patientName}" إلي ${record.nutritionName}`;
+              // if (previousRecord) {
+              //   changes.push(
+              //     `غير التغذية من ${
+              //       previousRecord.nutrition == null
+              //         ? "-"
+              //         : previousRecord.nutrition
+              //     } الى ${record.nutritionName}`
+              //   );
+              // }
+              break;
+            case 5:
+              description += `بتغير تفاصيل الاقامة لدى "${record.patientName}"`;
+              if (previousRecord) {
+                if (record.nutritionName !== previousRecord.nutrition) {
+                  changes.push(
+                    `غير التغذية من ${
+                      previousRecord.nutrition == null
+                        ? "-"
+                        : previousRecord.nutrition
+                    } الى ${record.nutritionName}`
+                  );
+                }
+                if (record.sectionName !== previousRecord.section) {
+                  changes.push(
+                    `نقل الحالة من قسم ${previousRecord.section} الى "${record.sectionName}"`
+                  );
+                }
+              }
+
+              break;
+            default:
+              description += `${record.actionType.toLowerCase()} ${
+                record.patientName
+              }`;
+          }
+
+          // Add additional changes
+          if (previousRecord) {
+            if (record.room !== previousRecord.room) {
+              changes.push(
+                `غير الغرفة من ${
+                  previousRecord.room == null ? "-" : previousRecord.room
+                } الى ${record.room}`
+              );
+            }
+            if (record.diagnoses !== previousRecord.diagnoses) {
+              changes.push(
+                `غير التشخيص من ${previousRecord.diagnoses} الى ${record.diagnoses}`
+              );
+            }
+          }
+
+          return {
+            id: record.phID,
+            description,
+            changes,
+            date: record.dateCreated,
+            username: record.userName,
+            action: record.actionType,
+
+            // details: {
+            //   patient: {
+            //     name: record.patientName,
+            //     number: record.patientNumber,
+            //     rank: record.rankName,
+            //     familyRelation: record.familyRelationName,
+            //   },
+            //   section: record.sectionName,
+            //   diagnoses: record.diagnoses,
+            //   room: record.room,
+            //   nutrition: record.nutritionName,
+            //   user: record.userName,
+            // },
+          };
+        })
+      );
+
+      return {
+        success: true,
+        data: formattedRecords,
+        pagination: {
+          currentPage: filters.page,
+          totalPages: Math.ceil(count / itemsPerPage),
+          totalRecords: Number(count),
+          hasMore: count > filters.page * itemsPerPage,
+        },
+      };
+    } catch (error) {
+      console.error("Error in getHistory:", error);
+      return { success: false, error: "Failed to fetch history" };
     }
   }
 
@@ -710,17 +972,37 @@ export class PatientHistoryController {
           );
         }
         // Update history record
-        const [updatedHistory] = await tx
+        // const [updatedHistory] = await tx
+        //   .update(patientsHistory)
+        //   .set({
+        //     entryDate: data.entryDate || currentHistory.entryDate,
+        //     Diagnoses: data.Diagnoses || currentHistory.Diagnoses,
+        //     nutrition: data.nutrition || currentHistory.nutrition,
+        //     section: data.section || currentHistory.section,
+        //     room: data.room || currentHistory.room,
+        //     ByUser: uID,
+        //   })
+        //   .where(eq(patientsHistory.phID, data.phID))
+        //   .returning();
+
+        // 3. Update current history record with exit date
+        await tx
           .update(patientsHistory)
-          .set({
+          .set({ exitDate: sql`CURRENT_TIMESTAMP` })
+          .where(eq(patientsHistory.pID, data.pID));
+
+        const [updatedHistory] = await tx
+          .insert(patientsHistory)
+          .values({
+            pID: data.pID,
             entryDate: data.entryDate || currentHistory.entryDate,
             Diagnoses: data.Diagnoses || currentHistory.Diagnoses,
             nutrition: data.nutrition || currentHistory.nutrition,
             section: data.section || currentHistory.section,
             room: data.room || currentHistory.room,
+            action: 5,
             ByUser: uID,
           })
-          .where(eq(patientsHistory.phID, data.phID))
           .returning();
 
         return {
@@ -737,6 +1019,118 @@ export class PatientHistoryController {
         error: "Failed to update admission",
         details: error,
       };
+    }
+  }
+
+  // Get deleted records
+  static async getDeletedRecords(page: number = 1) {
+    try {
+      const itemsPerPage = 25;
+      const offset = (page - 1) * itemsPerPage;
+
+      const baseQuery = db
+        .select({
+          pID: patientsHistory.pID,
+          phID: patientsHistory.phID,
+          patientName: patients.fullName,
+          patientNumber: patients.pNum,
+          sectionName: sectionsOccupancy.secName,
+          exitDate: patientsHistory.exitDate,
+          dateCreated: patientsHistory.dateCreated,
+          deletedBy: users.uName,
+          rankName: ranks.name,
+          familyRelationName: rankFamily.name,
+        })
+        .from(patientsHistory)
+        .innerJoin(patients, eq(patientsHistory.pID, patients.pID))
+        .innerJoin(
+          sectionsOccupancy,
+          eq(patientsHistory.section, sectionsOccupancy.secID)
+        )
+        .innerJoin(users, eq(patientsHistory.ByUser, users.uID))
+        .leftJoin(ranks, eq(patients.rankID, ranks.id))
+        .leftJoin(rankFamily, eq(patients.familyRelation, rankFamily.id))
+        .where(sql`${patientsHistory.exitDate} IS NOT NULL`)
+        .orderBy(desc(patientsHistory.exitDate));
+
+      // Get total count
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(baseQuery.as("deleted_records"));
+
+      // Get paginated results
+      const records = await baseQuery.limit(itemsPerPage).offset(offset);
+
+      return {
+        success: true,
+        data: {
+          records,
+          pagination: {
+            currentPage: page,
+            totalPages: Math.ceil(count / itemsPerPage),
+            totalRecords: count,
+            hasMore: count > page * itemsPerPage,
+          },
+        },
+      };
+    } catch (error) {
+      console.error("Error in getDeletedRecords:", error);
+      return { success: false, error: "Failed to fetch deleted records" };
+    }
+  }
+
+  // Restore deleted record
+  static async restoreRecord(data: RestoreType, uID: number) {
+    try {
+      return await db.transaction(async (tx) => {
+        // Get the record to restore
+        const [record] = await tx
+          .select({
+            phID: patientsHistory.phID,
+            section: patientsHistory.section,
+            exitDate: patientsHistory.exitDate,
+            rankID: patients.rankID,
+            familyRelation: patients.familyRelation,
+          })
+          .from(patientsHistory)
+          .innerJoin(patients, eq(patientsHistory.pID, patients.pID))
+          .where(eq(patientsHistory.phID, data.phID));
+
+        if (!record) {
+          return { success: false, error: "Record not found" };
+        }
+
+        if (!record.exitDate) {
+          return { success: false, error: "Record is not deleted" };
+        }
+
+        // Update the record
+        const [restored] = await tx
+          .update(patientsHistory)
+          .set({
+            exitDate: null,
+            ByUser: uID,
+          })
+          .where(eq(patientsHistory.phID, data.phID))
+          .returning();
+
+        // Update section occupancy
+        await this.updateSectionOccupancy(
+          tx,
+          record.section,
+          record.rankID,
+          true,
+          record.familyRelation
+        );
+
+        return {
+          success: true,
+          message: "Record restored successfully",
+        };
+      });
+    } catch (error) {
+      console.error("Error in restoreRecord:", error);
+      return { success: false, error: "Failed to restore record" };
     }
   }
 }

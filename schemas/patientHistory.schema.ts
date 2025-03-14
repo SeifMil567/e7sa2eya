@@ -21,8 +21,8 @@ export const admissionSchema = basePatientSchema
   })
   .refine(
     (data) => {
-      if (data.rank === 2 || data.rank === 4) {
-        return data.host && data.unit === "FAMILY";
+      if (data.familyRelation) {
+        return data.host;
       }
       return true;
     },
@@ -54,7 +54,7 @@ export const changeNutritionSchema = z.object({
 
 // Add Escort schema
 export const addEscortSchema = z.object({
-  escorts: z.number().min(1),
+  escorts: z.number().min(0),
 });
 
 //change room schema
@@ -88,6 +88,13 @@ export const editAdmissionSchema = basePatientSchema
     }
   );
 
+// Add restore schema
+export const restoreSchema = z.object({
+  phID: z.number().min(1),
+  pID: z.number().min(1),
+});
+
+export type RestoreType = z.infer<typeof restoreSchema>;
 export type AdmissionType = z.infer<typeof admissionSchema>;
 export type TransferType = z.infer<typeof transferSchema>;
 export type ExitType = z.infer<typeof exitSchema>;

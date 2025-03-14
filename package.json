@@ -14,11 +14,20 @@
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
+  "scripts": {
+    "dev": "bun run --watch /index.ts",
+    "build": "bun build index.ts --target=bun --outdir=dist",
+    "start": "bun run dist/index.js",
+    "db:generate": "drizzle-kit generate:pg",
+    "db:push": "drizzle-kit push:pg",
+    "db:studio": "drizzle-kit studio"
+  },
   "dependencies": {
     "@elysiajs/cors": "^1.2.0",
     "@elysiajs/jwt": "^1.2.0",
     "@elysiajs/swagger": "^1.2.0",
     "@vercel/postgres": "^0.10.0",
+    "aws-sdk": "^2.1692.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "bun-types": "^1.2.1",
@@ -26,6 +35,8 @@
     "drizzle-orm": "^0.39.1",
     "elysia": "^1.2.10",
     "jsonwebtoken": "^9.0.2",
+    "mock-aws-s3": "^4.0.2",
+    "nock": "^14.0.1",
     "pg": "^8.13.1",
     "postgres": "^3.4.5",
     "zod": "^3.24.1"

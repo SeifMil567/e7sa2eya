@@ -8,7 +8,9 @@ import {
   changeRoomSchema,
   addEscortSchema,
   editAdmissionSchema,
+  restoreSchema,
 } from "../schemas/patientHistory.schema";
+import { historyFilterSchema } from "../schemas/history.schema";
 import { verifyToken } from "../utils/security";
 import type { ZodIssue } from "zod";
 
@@ -33,16 +35,57 @@ export const patientHistoryRoutes = new Elysia({ prefix: "/patient-history" })
       };
     }
   })
-  // .get("/history", async () => {
-  //   try {
-  //     return await PatientHistoryController.getHistory();
-  //   } catch (error) {
-  //     return {
-  //       success: false,
-  //       error: "Unauthorized access or server error",
-  //     };
-  //   }
-  // })
+  .get("/getDeleted", async () => {
+    try {
+      return await PatientHistoryController.getDeletedRecords();
+    } catch (error) {
+      return {
+        success: false,
+        error: "Unauthorized access or server error",
+      };
+    }
+  })
+  .post("/restore", async ({ body, uID }) => {
+    try {
+      const validatedData = restoreSchema.safeParse(body);
+
+      if (!validatedData.success) {
+        return {
+          success: false,
+          error: validatedData.error.errors,
+        };
+      }
+
+      return await PatientHistoryController.restoreRecord(
+        validatedData.data,
+        uID
+      );
+    } catch (error) {
+      return {
+        success: false,
+        error: "Failed to process restore request",
+      };
+    }
+  })
+  .post("/history", async ({ body }) => {
+    try {
+      const validatedData = historyFilterSchema.safeParse(body);
+
+      if (!validatedData.success) {
+        return {
+          success: false,
+          error: validatedData.error.errors,
+        };
+      }
+
+      return await PatientHistoryController.getHistory(validatedData.data);
+    } catch (error) {
+      return {
+        success: false,
+        error: "Failed to process admission request",
+      };
+    }
+  })
   .post("/admit", async ({ body, uID, set }) => {
     try {
       const validatedData = admissionSchema.safeParse(body);

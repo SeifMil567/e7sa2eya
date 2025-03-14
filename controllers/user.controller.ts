@@ -33,6 +33,7 @@ export class UserController {
   // Create a new user
   static async createUser(data: CreateUserType, uID: any) {
     try {
+      console.log("data: ", data);
       const [newUser] = await db
         .insert(users)
         .values({

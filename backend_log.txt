@@ -1,0 +1,12 @@
+$ bun run dist/index.js
+🚀 Server is running on http://128.2.5.51:3001
+DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+ code: "DEP0169"
+
+      at urlParse (node:url:10:45)
+      at validate_config (D:\sde\e7sa2eya\dist\index.js:904724:33)
+      at <anonymous> (D:\sde\e7sa2eya\dist\index.js:904836:31)
+      at D:\sde\e7sa2eya\dist\index.js:923237:35
+
+^Cerror: script "start" exited with code 58
+^CTerminate batch job (Y/N)? 

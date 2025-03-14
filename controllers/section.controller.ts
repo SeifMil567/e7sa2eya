@@ -59,7 +59,7 @@ export class SectionController {
       const totals = sections.reduce(
         (acc, section) => {
           // Skip sections with groupID 6666
-          if (section.groupId === 6666) {
+          if (section.groupId === 6666 || section.totalCapacity == 1111) {
             return acc;
           }
 
