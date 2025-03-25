@@ -13,7 +13,7 @@ const app = new Elysia()
   .get("/", () => ({ message: "Elysia.js with Bun is running!" }))
   .use(mainRoutes)
   .listen({
-    hostname: "0.0.0.0",
+    // hostname: "0.0.0.0",
     port: process.env.PORT || 3000,
   });
 console.log(`🚀 Server is running on http://128.2.5.51:${app.server?.port}`);

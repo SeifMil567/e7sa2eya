@@ -11,7 +11,7 @@ import {
   sectionGroup,
   actions,
 } from "../db/schema";
-import { eq, and, or, desc } from "drizzle-orm";
+import { eq, and, or, desc, SQL } from "drizzle-orm";
 import type {
   AdmissionType,
   TransferType,
@@ -119,7 +119,7 @@ export class PatientHistoryController {
         const existingPatient = await tx
           .select()
           .from(patients)
-          .where(eq(patients.pNum, data.pNum))
+          .where(eq(patients.pNum, String(data.pNum)))
           .limit(1);
 
         let patientId: number;
@@ -151,7 +151,7 @@ export class PatientHistoryController {
           const [newPatient] = await tx
             .insert(patients)
             .values({
-              pNum: data.pNum,
+              pNum: String(data.pNum),
               rankID: data.rank,
               fullName: data.fullName,
               unit: data.unit ?? "", // Ensure string type
@@ -492,6 +492,9 @@ export class PatientHistoryController {
           sectionName: sectionsOccupancy.secName,
           escorts: sectionsOccupancy.escorts,
           totalCapacity: sectionsOccupancy.totalCapacity,
+          hasRoom: sectionsOccupancy.hasRoom,
+          hasNutrition: sectionsOccupancy.hasNutrition,
+          underConstruction: sectionsOccupancy.underConstruction,
 
           // Patient History Data
           phID: patientsHistory.phID,
@@ -531,7 +534,7 @@ export class PatientHistoryController {
         .leftJoin(rankFamily, eq(patients.familyRelation, rankFamily.id))
         .leftJoin(rankType, eq(ranks.typeID, rankType.id))
         .leftJoin(nutritions, eq(patientsHistory.nutrition, nutritions.nID))
-        .orderBy(sectionsOccupancy.secID, patientsHistory.entryDate);
+        .orderBy(sectionsOccupancy.order, patientsHistory.entryDate);
 
       // Group patients by section for better organization
       const patientsBySection = activePatients.reduce(
@@ -562,6 +565,8 @@ export class PatientHistoryController {
                 patient.familyRelationName
               ),
             },
+            sectionHasRoom: patient.hasRoom,
+            sectionHasNutrition: patient.hasNutrition,
             nutrition: patient.nutritionId
               ? {
                   id: patient.nutritionId,
@@ -580,6 +585,9 @@ export class PatientHistoryController {
                 sectionId: patient.sectionId,
                 sectionName: patient.sectionName,
                 sectionEscorts: patient.escorts,
+                hasRoom: patient.hasRoom,
+                hasNutrition: patient.hasNutrition,
+                underConstruction: patient.underConstruction,
                 patients: [patientData],
               });
             }
@@ -591,6 +599,9 @@ export class PatientHistoryController {
           sectionId: number | null;
           sectionName: string | null;
           sectionEscorts: number | null;
+          hasRoom: boolean | null;
+          hasNutrition: boolean | null;
+          underConstruction: boolean | null;
           patients: Array<any>;
         }>
       );
@@ -609,7 +620,8 @@ export class PatientHistoryController {
       const itemsPerPage = 25;
       const offset = (filters.page - 1) * itemsPerPage;
 
-      let whereConditions = [];
+      // Initialize whereConditions with the correct type
+      const whereConditions: SQL[] = [];
 
       if (filters.activeOnly) {
         whereConditions.push(sql`${patientsHistory.exitDate} IS NULL`);
@@ -618,13 +630,11 @@ export class PatientHistoryController {
       if (filters.search) {
         const searchTerm = `%${filters.search}%`;
         whereConditions.push(
-          or(
-            sql`${patients.fullName} ILIKE ${searchTerm}`,
-            sql`${patients.pNum} ILIKE ${searchTerm}`,
-            sql`${sectionsOccupancy.secName} ILIKE ${searchTerm}`,
-            sql`${users.uName} ILIKE ${searchTerm}`,
-            sql`${patientsHistory.Diagnoses} ILIKE ${searchTerm}`
-          )
+          sql`(${patients.fullName} ILIKE ${searchTerm} OR 
+              ${patients.pNum} ILIKE ${searchTerm} OR
+              ${sectionsOccupancy.secName} ILIKE ${searchTerm} OR
+              ${users.uName} ILIKE ${searchTerm} OR
+              ${patientsHistory.Diagnoses} ILIKE ${searchTerm})`
         );
       }
 
@@ -691,7 +701,10 @@ export class PatientHistoryController {
         .leftJoin(nutritions, eq(patientsHistory.nutrition, nutritions.nID));
 
       // Apply filters
-      const query = baseQuery.where(and(...whereConditions));
+      const query =
+        whereConditions.length > 0
+          ? baseQuery.where(and(...whereConditions))
+          : baseQuery;
 
       // Get total count for pagination
       const [{ count }] = await db
@@ -743,7 +756,7 @@ export class PatientHistoryController {
 
           // Build main description
           let description = `قام "${record.userName}" `;
-          let changes = [];
+          let changes: string[] = [];
 
           switch (record.actionID) {
             case 1:
@@ -941,7 +954,7 @@ export class PatientHistoryController {
           await tx
             .update(patients)
             .set({
-              pNum: data.pNum || patient.pNum,
+              pNum: String(data.pNum) || patient.pNum,
               rankID: data.rank || patient.rankID,
               familyRelation: editFamilyRelation,
               fullName: data.fullName || patient.fullName,
@@ -1051,7 +1064,7 @@ export class PatientHistoryController {
         .leftJoin(ranks, eq(patients.rankID, ranks.id))
         .leftJoin(rankFamily, eq(patients.familyRelation, rankFamily.id))
         .where(sql`${patientsHistory.exitDate} IS NOT NULL`)
-        .orderBy(desc(patientsHistory.exitDate));
+        .orderBy(desc(patientsHistory.dateCreated));
 
       // Get total count
       const [{ count }] = await db
@@ -1078,7 +1091,6 @@ export class PatientHistoryController {
       return { success: false, error: "Failed to fetch deleted records" };
     }
   }
-
   // Restore deleted record
   static async restoreRecord(data: RestoreType, uID: number) {
     try {

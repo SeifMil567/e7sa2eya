@@ -6,7 +6,6 @@ DeprecationWarning: `url.parse()` behavior is not standardized and prone to erro
       at urlParse (node:url:10:45)
       at validate_config (D:\sde\e7sa2eya\dist\index.js:904724:33)
       at <anonymous> (D:\sde\e7sa2eya\dist\index.js:904836:31)
-      at D:\sde\e7sa2eya\dist\index.js:923237:35
+      at D:\sde\e7sa2eya\dist\index.js:923251:35
 
-^Cerror: script "start" exited with code 58
-^CTerminate batch job (Y/N)? 
+^C^C

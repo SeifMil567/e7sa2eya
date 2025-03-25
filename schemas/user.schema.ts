@@ -6,7 +6,8 @@ export const CreateUserSchema = z.object({
   password: z.string().min(1),
   milNum: z.string().min(1),
   activ: z.number().min(1),
-  adminLevel: z.number().min(1),
+  adminlevel: z.number().min(1),
+  sectionId: z.number().nullable(),
 });
 
 export type CreateUserType = z.infer<typeof CreateUserSchema>;

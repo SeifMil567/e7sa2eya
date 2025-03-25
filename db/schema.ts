@@ -5,8 +5,10 @@ import {
   varchar,
   timestamp,
   date,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+// import { boolean } from "drizzle-orm/mysql-core";
 
 // Define related tables (these should already exist)
 export const users = pgTable("users", {
@@ -15,9 +17,11 @@ export const users = pgTable("users", {
   username: varchar("username", { length: 255 }).notNull(), // Username (non-nullable)
   password: varchar("password", { length: 255 }).notNull(), // User password (non-nullable)
   adminlevel: integer("adminlevel").notNull().default(3), // Admin level (non-nullable)
-  milNum: varchar("milnum", { length: 255 }), // Military number (nullable)
   ByUser: integer("byuser").notNull(), // Foreign key referencing the user table itself
   activ: integer("activ").notNull().default(1), // Active status (default value is 1)
+  sectionId: integer("sectionId").references(() => sectionsOccupancy.secID, {
+    onDelete: "cascade",
+  }),
   dateCreated: timestamp("datecreated").default(sql`CURRENT_TIMESTAMP`), // Date created with default current timestamp
 });
 
@@ -45,7 +49,6 @@ export const nutritions = pgTable("nutritions", {
   dateCreated: timestamp("datecreated").default(sql`CURRENT_TIMESTAMP`), // Automatically set current timestamp
 });
 
-// Define the patients table in Drizzle ORM
 export const patients = pgTable("patients", {
   pID: serial("pid").primaryKey(), // Auto-increment primary key
   pNum: varchar("pnum", { length: 255 }).notNull(), // Patient number (non-nullable)
@@ -64,7 +67,6 @@ export const patients = pgTable("patients", {
   dateCreated: timestamp("datecreated").default(sql`CURRENT_TIMESTAMP`), // Automatically set current timestamp
 });
 
-// Define the patient_history table schema
 export const patientsHistory = pgTable("patients_history", {
   phID: serial("phid").primaryKey(),
   Diagnoses: varchar("diagnoses", { length: 255 }).notNull(),
@@ -100,6 +102,10 @@ export const sectionsOccupancy = pgTable("sections_occupancy", {
   sectionGroupID: integer("sectionGroupID")
     .references(() => sectionGroup.id)
     .notNull(),
+  hasRoom: boolean("hasRoom").notNull().default(true),
+  hasNutrition: boolean("hasNutrition").notNull().default(true),
+  underConstruction: boolean("underConstruction").notNull().default(false),
+  order: integer("order").notNull().default(0),
 });
 
 export const ranks = pgTable("ranks", {
@@ -108,6 +114,15 @@ export const ranks = pgTable("ranks", {
   typeID: integer("typeID")
     .notNull()
     .references(() => rankType.id),
+});
+
+export const computerInfo = pgTable("computer_info", {
+  id: serial("id").primaryKey(),
+  device_ip: varchar("device_ip"),
+  device_serial: varchar("device_serial"),
+  device_type: varchar("device_type"),
+  device_name: varchar("device_name"),
+  device_location: varchar("device_location"),
 });
 
 export const rankType = pgTable("rank_type", {

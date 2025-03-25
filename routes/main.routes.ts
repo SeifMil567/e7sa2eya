@@ -7,6 +7,7 @@ import { nutritionsRoutes } from "./nutritions.routes";
 import { sectionsRoutes } from "./sections.routes";
 import { userRoutes } from "./user.routes";
 import { supervisorRoutes } from "../routes/supervisor.routes";
+import { computerRoutes } from "../routes/computerInfo.routes";
 // import { nutritionsRoutes } from "./nutritions.";
 
 // Main router that combines all module routes
@@ -18,6 +19,7 @@ export const mainRoutes = new Elysia({ prefix: "/api" })
   .use(sectionsRoutes)
   .use(nutritionsRoutes)
   .use(userRoutes)
+  .use(computerRoutes)
   .use(supervisorRoutes);
 
 //   .use(nutritionsRoutes);

@@ -17,9 +17,12 @@ export class SectionController {
           secName: sectionsOccupancy.secName,
           totalCapacity: sectionsOccupancy.totalCapacity,
           sectionGroupID: sectionsOccupancy.sectionGroupID,
+          hasRoom: sectionsOccupancy.hasRoom,
+          hasNutrition: sectionsOccupancy.hasNutrition,
+          underConstruction: sectionsOccupancy.underConstruction,
         })
         .from(sectionsOccupancy)
-        .orderBy(sectionsOccupancy.secID);
+        .orderBy(sectionsOccupancy.order);
 
       return { success: true, data: sections };
     } catch (error) {
@@ -44,6 +47,9 @@ export class SectionController {
           patients: sectionsOccupancy.patients,
           totalCapacity: sectionsOccupancy.totalCapacity,
           availableBeds: sectionsOccupancy.availableBeds,
+          hasNutrition: sectionsOccupancy.hasNutrition,
+          hasRoom: sectionsOccupancy.hasRoom,
+          underConstruction: sectionsOccupancy.underConstruction,
           // Group Data
           groupId: sectionGroup.id,
           groupName: sectionGroup.groupName,
@@ -115,6 +121,7 @@ export class SectionController {
             patients: section.patients,
             totalCapacity: section.totalCapacity,
             availableBeds: section.availableBeds,
+            underConstruction: section.underConstruction,
           };
 
           const group = acc.find((g) => g.groupId === section.groupId);

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // Base patient schema
 const basePatientSchema = z.object({
-  pNum: z.string(),
+  pNum: z.number(),
   rank: z.number(),
   familyRelation: z.number().nullable(),
   fullName: z.string(),

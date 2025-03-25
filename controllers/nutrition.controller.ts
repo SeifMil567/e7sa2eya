@@ -1,13 +1,16 @@
 import db from "../config/db";
 import { eq } from "drizzle-orm";
-import { nutritions } from "../db/schema";
-import  type { CreateNutritionType }  from "../schemas/nutrition.schema"
+import { computerInfo, nutritions } from "../db/schema";
+import type { CreateNutritionType } from "../schemas/nutrition.schema";
 
 export class NutritionController {
   // Get all sections
   static async getAllNutritions() {
     try {
-      const allnutrtions = await db.select().from(nutritions);
+      const allnutrtions = await db
+        .select()
+        .from(nutritions)
+        .orderBy(nutritions.nName);
       return { success: true, data: allnutrtions };
     } catch (error) {
       console.error("Error in getAllSections:", error); // Log the actual error
@@ -16,21 +19,35 @@ export class NutritionController {
   }
 
   // Create a new nutrtion
-  static async createNutrtion(data: CreateNutritionType, uID : any ) {
+  static async createNutrtion(data: CreateNutritionType, uID: any) {
     try {
-        const nutData = {nName : data.nname , ByUser : uID} 
-      const newSection = await db.insert(nutritions).values(nutData).returning();
+      const nutData = { nName: data.nname, ByUser: uID };
+      const nameExists = await db
+        .select()
+        .from(nutritions)
+        .where(eq(nutritions.nName, data.nname));
+      if (nameExists.length != 0) {
+        return { success: false, data: "يوجد تغذية بنفس الاسم" };
+      }
+      const newSection = await db
+        .insert(nutritions)
+        .values(nutData)
+        .returning();
       return { success: true, data: newSection[0] };
     } catch (error) {
       console.error("Error in createNutrtion:", error); // Log the actual error
-      return { success: false, error: "Failed to create nutrtion" };
+      return { success: false, error: error };
     }
   }
 
   // Update a nutrtion
-  static async updateNutrtion(id: number, data: Partial<CreateNutritionType>, uID : any) {
+  static async updateNutrtion(
+    id: number,
+    data: Partial<CreateNutritionType>,
+    uID: any
+  ) {
     try {
-        const nutData = { nName : data.nname, ByUser : uID} 
+      const nutData = { nName: data.nname, ByUser: uID };
       const updatedNutrtion = await db
         .update(nutritions)
         .set(nutData)

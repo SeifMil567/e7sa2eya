@@ -41,6 +41,7 @@ export class AuthController {
             username: user[0].username,
             uName: user[0].uName,
             adminLevel: user[0].adminlevel,
+            sectionId: user[0].sectionId,
           },
         },
       };

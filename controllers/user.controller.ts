@@ -14,9 +14,9 @@ export class UserController {
           uID: users.uID,
           uName: users.uName,
           username: users.username,
-          milNum: users.milNum,
           byUserID: UserTable.uID,
           byUserName: UserTable.uName,
+          sectionId: users.sectionId,
           activ: users.activ,
           adminlevel: users.adminlevel,
         })
@@ -33,15 +33,14 @@ export class UserController {
   // Create a new user
   static async createUser(data: CreateUserType, uID: any) {
     try {
-      console.log("data: ", data);
       const [newUser] = await db
         .insert(users)
         .values({
           uName: data.uName,
           username: data.username,
           activ: data.activ,
-          adminlevel: data.adminLevel,
-          milNum: data.milNum,
+          adminlevel: data.adminlevel,
+          sectionId: data.sectionId,
           password: await hashPassword(data.password),
           ByUser: uID,
         })
@@ -51,7 +50,7 @@ export class UserController {
           username: users.username,
           activ: users.activ,
           adminlevel: users.adminlevel,
-          milNum: users.milNum,
+          sectionId: users.sectionId,
         });
 
       return { success: true, data: newUser };
@@ -84,7 +83,7 @@ export class UserController {
           username: users.username,
           activ: users.activ,
           adminlevel: users.adminlevel,
-          milNum: users.milNum,
+          sectionId: users.sectionId,
         });
 
       if (!updatedUser) {
